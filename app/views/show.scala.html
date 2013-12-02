@@ -1,4 +1,4 @@
-@(url: ShortenedURL)
+@(url: ShortenedURL, baseUrl: String)
 
 @import helper._
 
@@ -7,6 +7,7 @@
     <h1>URL Information</h1>
     <p>ID:  @url.id</br>
        URL: @url.url.toString</br>
+       Shortened URL: <a href="@baseUrl/@url.id">@baseUrl/@url.id</a>
     </p>
     
 }

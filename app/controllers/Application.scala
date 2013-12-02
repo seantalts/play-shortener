@@ -18,6 +18,7 @@ import models.ShortenedURL
 
 object Application extends Controller {
   implicit lazy val database = Database.forDataSource(DB.getDataSource())
+  lazy val baseUrl = current.configuration.getString("application.url")
 
   val urlForm = Form(
     "url" -> nonEmptyText.verifying("Not a valid URL!", s => Try(new URL(s)) match {
@@ -51,7 +52,7 @@ object Application extends Controller {
     }
   }
 
-  def show(id: String) = getSURL(id, s => Ok(views.html.show(s)))
+  def show(id: String) = getSURL(id, s => Ok(views.html.show(s, baseUrl.getOrElse(""))))
 
   def redirect(id: String) = getSURL(id, s=> Found(s.url.toString))
 
