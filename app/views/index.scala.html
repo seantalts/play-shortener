@@ -1,7 +1,15 @@
-@(message: String)
+@(urlForm: Form[String])
 
-@main("Welcome to Play") {
+@import helper._
 
-    @play20.welcome(message)
-
+@main("Shorten URL") {
+    
+    <h1>Shorten a URL</h1>
+    
+    @form(routes.Application.newURL) {
+        
+        @inputText(urlForm("url")) 
+        
+        <input type="submit" value="Shorten">
+    }
 }
