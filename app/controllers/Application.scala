@@ -20,8 +20,12 @@ object Application extends Controller {
   implicit lazy val database = Database.forDataSource(DB.getDataSource())
   lazy val baseUrl = current.configuration.getString("application.url")
 
+  def ensureProtocol(s: String) = if (!s.contains("://")) "http://" + s else s
+  
+  def URL(s: String) = new URL(ensureProtocol(s))
+  
   val urlForm = Form(
-    "url" -> nonEmptyText.verifying("Not a valid URL!", s => Try(new URL(s)) match {
+    "url" -> nonEmptyText.verifying("Not a valid URL!", s => Try(URL(s)) match {
       case Success(_) => true
       case Failure(_) => false
     }))
@@ -35,7 +39,7 @@ object Application extends Controller {
       errors => BadRequest(views.html.index(errors)),
       url => {
         val id = database withSession {
-          ShortenedURLs.getOrCreate(url)
+          ShortenedURLs.getOrCreate(URL(url))
         }
         Redirect(routes.Application.show(id))
       })
@@ -55,5 +59,4 @@ object Application extends Controller {
   def show(id: String) = getSURL(id, s => Ok(views.html.show(s, baseUrl.getOrElse(""))))
 
   def redirect(id: String) = getSURL(id, s=> Found(s.url.toString))
-
 }

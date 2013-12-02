@@ -36,12 +36,11 @@ object ShortenedURLs extends Table[ShortenedURL]("shortened_urls") {
     if u.id === id
   } yield u).first
 
-  def getOrCreate(url: String)(implicit session: Session): String = {
-    val nurl = new URL(url)
+  def getOrCreate(url: URL)(implicit session: Session): String = {
     try {
-      get(nurl)
+      get(url)
     } catch {
-      case e: NoSuchElementException => ShortenedURLs.forInsert.insert(nurl)
+      case e: NoSuchElementException => ShortenedURLs.forInsert.insert(url)
     }
   }
 }
