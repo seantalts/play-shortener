@@ -3,7 +3,6 @@ package models
 import java.net.URL
 import scala.slick.driver.PostgresDriver.simple._
 import org.postgresql.util.PSQLException
-import com.sun.xml.internal.bind.v2.schemagen.xmlschema.List
 
 case class ShortenedURL(id: String, url: URL)
 
@@ -21,7 +20,7 @@ object ShortenedURLs extends Table[ShortenedURL]("shortened_urls") {
 
   def id = column[String]("id", O.PrimaryKey, O.AutoInc)
   def url = column[URL]("url", O.DBType("text"))
-  def uidx = index("idx_url", url, unique = true)
+  def uidx = index("surls_url_idx", url, unique = true)
 
   def * = id ~ url <> (ShortenedURL, ShortenedURL.unapply _)
   def forInsert = url returning id
@@ -29,18 +28,19 @@ object ShortenedURLs extends Table[ShortenedURL]("shortened_urls") {
   def get(url: URL)(implicit session: Session) = (for {
     u <- ShortenedURLs
     if u.url === url
-  } yield u.id).first
+  } yield u.id).firstOption
 
   def get(id: String)(implicit session: Session) = (for {
     u <- ShortenedURLs
     if u.id === id
-  } yield u).first
+  } yield u).firstOption
 
-  def getOrCreate(url: URL)(implicit session: Session): String = {
-    try {
-      get(url)
-    } catch {
-      case e: NoSuchElementException => ShortenedURLs.forInsert.insert(url)
-    }
+  def getOrCreate(url: URL)(implicit session: Session): String = get(url) match {
+    case Some(su) => su
+    case None => ShortenedURLs.forInsert.insert(url)
+  }
+  
+  def visit(id: String, referrer: Option[URL] = None)(implicit session: Session) = {
+    Clicks.insert(Click(hex2Int(id), referrer))
   }
 }

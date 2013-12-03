@@ -14,16 +14,15 @@ import models.ShortenedURL
 import scala.slick.driver.PostgresDriver.simple._
 import Database.threadLocalSession
 import models.ShortenedURLs
-import models.ShortenedURL
 
 object Application extends Controller {
   implicit lazy val database = Database.forDataSource(DB.getDataSource())
   lazy val baseUrl = current.configuration.getString("application.url")
 
   def ensureProtocol(s: String) = if (!s.contains("://")) "http://" + s else s
-  
+
   def URL(s: String) = new URL(ensureProtocol(s))
-  
+
   val urlForm = Form(
     "url" -> nonEmptyText.verifying("Not a valid URL!", s => Try(URL(s)) match {
       case Success(_) => true
@@ -45,18 +44,20 @@ object Application extends Controller {
       })
   }
 
-  def getSURL(id: String, success: (ShortenedURL) => SimpleResult) = Action {
-    try {
-      val surl = database withSession {
-        ShortenedURLs.get(id)
-      }
-      success(surl)
-    } catch {
-      case e: java.util.NoSuchElementException => NotFound(s"URL $id not found.")
+  def getSURL(id: String, success: (ShortenedURL) => SimpleResult) = database withSession {
+    ShortenedURLs.get(id)
+  }.map(success).getOrElse(NotFound(s"URL $id not found."))
+
+  def show(id: String) = Action { getSURL(id, s => Ok(views.html.show(s, baseUrl.getOrElse("")))) }
+
+  def redirect(id: String) = Action { implicit request =>
+    {
+      getSURL(id, (s => {
+        database withSession {
+          ShortenedURLs.visit(s.id, request.headers.get("REFERER").flatMap(u => Try(URL(u)).toOption))
+        }
+        Found(s.url.toString)
+      }))
     }
   }
-
-  def show(id: String) = getSURL(id, s => Ok(views.html.show(s, baseUrl.getOrElse(""))))
-
-  def redirect(id: String) = getSURL(id, s=> Found(s.url.toString))
 }
