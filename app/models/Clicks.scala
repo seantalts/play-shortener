@@ -10,7 +10,6 @@ import com.github.tminglei.slickpg.date.TimestampTypeMapper
 object DateMapperImplicits {
   implicit val jodaDateTimeTypeMapper = new TimestampTypeMapper(sqlTimestamp2jodaDateTime, jodaDateTime2sqlTimestamp)
 
-    /// sql.Timestamp <-> joda LocalDateTime
   private def sqlTimestamp2jodaDateTime(ts: Timestamp): DateTime = {
     val cal = Calendar.getInstance()
     cal.setTime(ts)

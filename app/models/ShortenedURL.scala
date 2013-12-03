@@ -25,21 +25,19 @@ object ShortenedURLs extends Table[ShortenedURL]("shortened_urls") {
   def * = id ~ url <> (ShortenedURL, ShortenedURL.unapply _)
   def forInsert = url returning id
 
-  def get(url: URL)(implicit session: Session) = (for {
-    u <- ShortenedURLs
-    if u.url === url
-  } yield u.id).firstOption
+  type Q = Query[ShortenedURLs.type, ShortenedURL]
 
-  def get(id: String)(implicit session: Session) = (for {
-    u <- ShortenedURLs
-    if u.id === id
-  } yield u).firstOption
+  def getFirst(modify: Q => Q)(implicit session: Session) = modify(Query(ShortenedURLs)).firstOption
+
+  def get(url: URL)(implicit session: Session) = getFirst(_.filter(_.url === url))
+
+  def get(id: String)(implicit session: Session) = getFirst(_.filter(_.id === id))
 
   def getOrCreate(url: URL)(implicit session: Session): String = get(url) match {
-    case Some(su) => su
+    case Some(su) => su.id
     case None => ShortenedURLs.forInsert.insert(url)
   }
-  
+
   def visit(id: String, referrer: Option[URL] = None)(implicit session: Session) = {
     Clicks.insert(Click(hex2Int(id), referrer))
   }
